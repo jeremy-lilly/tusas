@@ -3143,6 +3143,43 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     paramfunc_[1] = &tpetra::kks::param_;
     paramfunc_[2] = &tpetra::sheng::param_;
 
+  }else if("shengtrans" == paramList.get<std::string> (TusastestNameString)){
+
+    Teuchos::ParameterList *problemList;
+    problemList = &paramList.sublist("ProblemParams", false);
+
+    const int numeta = 1;
+    numeqs_ = numeta + 2;
+
+    residualfunc_ = new std::vector<RESFUNC>(numeqs_);
+    (*residualfunc_)[0] = tpetra::sheng::residual_mu_kks_;
+    (*residualfunc_)[1] = tpetra::sheng::residual_c_split_kks_;
+    (*residualfunc_)[2] = tpetra::sheng::residual_eta_kks_;
+
+    preconfunc_ = new std::vector<PREFUNC>(numeqs_);
+    (*preconfunc_)[0] = &tpetra::sheng::prec_mu_;
+    (*preconfunc_)[1] = &tpetra::sheng::prec_c_;
+    (*preconfunc_)[2] = &tpetra::sheng::prec_eta_;
+
+    initfunc_ = new std::vector<INITFUNC>(numeqs_);
+    (*initfunc_)[0] = &tpetra::sheng::init_mu_;
+    (*initfunc_)[1] = &tpetra::sheng::init_c_;
+    (*initfunc_)[2] = &tpetra::sheng::init_eta_;
+
+    varnames_ = new std::vector<std::string>(numeqs_);
+    (*varnames_)[0] = "mu";
+    (*varnames_)[1] = "c";
+    (*varnames_)[2] = "eta";
+
+    dirichletfunc_ = NULL;
+    neumannfunc_ = NULL;
+
+    paramfunc_.resize(4);
+    paramfunc_[0] = &tpetra::sheng::param_split_offset_;
+    paramfunc_[1] = &tpetra::sheng::param_trans_;
+    paramfunc_[2] = &tpetra::kks::param_;
+    paramfunc_[3] = &tpetra::sheng::param_;
+
   }else if("shengsplitkks" == paramList.get<std::string> (TusastestNameString)){
 
     Teuchos::ParameterList *problemList;
