@@ -59,11 +59,15 @@ namespace solvers
 
   double kks_tol = 1e-10;
   int kks_max_iter = 20;
+  bool solve_kks_verbose = false;
+  bool solve_kks_acceptfailed = false;
 
   PARAM_FUNC(param)
   {
     kks_tol = plist->get<double>("kks_tol", kks_tol); 
     kks_max_iter = plist->get<int>("kks_max_iter", kks_max_iter);
+    solve_kks_verbose = plist->get<bool>("solve_kks_verbose", solve_kks_verbose);
+    solve_kks_acceptfailed = plist->get<bool>("solve_kks_acceptfailed", solve_kks_acceptfailed);
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -92,6 +96,13 @@ namespace solvers
      * as implied above, note that
      *   c1 = c1a * h + c1b * (1 - h)
      */
+    if (solve_kks_verbose) {
+      std::cout << "#### solve_kks() started!" << std::endl;
+      std::cout << "### initial c1 = " << c1 << std::endl;
+      std::cout << "### initial hh = " << hh << std::endl;
+      std::cout << "### initial c1a = " << c1a << std::endl;
+      std::cout << "### initial c1b = " << c1b << std::endl;
+    }
 
     // meta variables
     double err2 = 0.;
@@ -101,14 +112,18 @@ namespace solvers
     const double tol = kks_tol;
 
     // initial guess for c1a and c1b
-    c1a = hh * c1a;
-    c1b = (1 - hh) * c1b;
+    //c1a = hh * c1a;
+    //c1b = (1 - hh) * c1b;
 
     // terms for the kks solve
     double d2fa_dc1a2 = (*D2FA_DC1A2)();
     double d2fb_dc1b2 = (*D2FB_DC1B2)();
     double f1 = hh * c1a + (1 - hh) * c1b - c1;
     double f2 = (*DFA_DC1A)(c1a) - (*DFB_DC1B)(c1b);
+    if (solve_kks_verbose) {
+      std::cout << "### initial f1 = " << f1 << std::endl; 
+      std::cout << "### initial f2 = " << f2 << std::endl; 
+    }
 
     /* 
      * newton iteration loop
@@ -125,16 +140,29 @@ namespace solvers
      *   delta = -J^-1 @ F 
      */
     for (int i = 0; i < max_iter; ++i) {
+      if (solve_kks_verbose) {
+        std::cout << "## iteration = " << i << std::endl;
+      }
+
       // det(J)
       const double detjac = -hh * d2fb_dc1b2 - (1 - hh) * d2fa_dc1a2;
 
       // -J^-1 @ F
       delta_c1a = -(-d2fb_dc1b2 * f1 - (1 - hh) * f2) / detjac;
       delta_c1b = -(-d2fa_dc1a2 * f1 + hh * f2) / detjac;
+      if (solve_kks_verbose) {
+        std::cout << "# detjac = " << detjac << std::endl;
+        std::cout << "# delta_c1a = " << delta_c1a << std::endl;
+        std::cout << "# delta_c1b = " << delta_c1b << std::endl;
+      }
 
       // new value for (c1a, c1b)
       c1a += delta_c1a;
       c1b += delta_c1b;
+      if (solve_kks_verbose) {
+        std::cout << "# c1a = " << c1a << std::endl;
+        std::cout << "# c1b = " << c1b << std::endl;
+      }
 
       // recalculate subset of terms for next iteration
       f1 = hh * c1a + (1 - hh) * c1b - c1;
@@ -142,6 +170,9 @@ namespace solvers
 
       // check error and return if done
       err2 = f1 * f1 + f2 * f2;
+      if (solve_kks_verbose) {
+        std::cout << "# current abs error = " << std::sqrt(err2) << std::endl;
+      }
       if (err2 < tol * tol) return 0;
 
       // recalculate remaining terms for next iteration
@@ -153,7 +184,14 @@ namespace solvers
     std::cout << "#### solve_kks() failed to converge!" << std::endl
               << "#### current error = " << std::sqrt(err2) << std::endl
               << "#### tol = " << tol << std::endl;
-    exit(-1);
+
+    if (solve_kks_acceptfailed) {
+      return 0;
+    }
+    else {
+      exit(-1);
+    }
+
   }
 
 
