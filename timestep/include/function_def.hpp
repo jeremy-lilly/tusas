@@ -7498,7 +7498,7 @@ RES_FUNC_TPETRA(residual_c_split_kks_)
                          + basis[mui_]->duuoldolddy() * basis[0]->dphidy(i)
                          + basis[mui_]->duuoldolddz() * basis[0]->dphidz(i))};
 
-  const double y = -(basis[ci_]->yy());
+  const double y = -(basis[0]->yy());
   const double s = S(y) * basis[0]->phi(i);
   
   return ut + (1. - t_theta2_) * t_theta_ * f[0]
