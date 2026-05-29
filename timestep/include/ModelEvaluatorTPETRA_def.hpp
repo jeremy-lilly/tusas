@@ -2918,6 +2918,13 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     (*varnames_)[0] = "mu";
     (*varnames_)[1] = "c";
     (*varnames_)[2] = "eta0";
+    if( 2 == numeta){
+      (*varnames_)[3] = "eta1";
+    }
+    if( 3 == numeta){
+      (*varnames_)[3] = "eta1";
+      (*varnames_)[4] = "eta2";
+    }
     if( 4 == numeta){
       (*varnames_)[2] = "eta1";
       (*varnames_)[4] = "eta2";
