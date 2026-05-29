@@ -177,6 +177,13 @@ namespace sheng
     pdes::kks::mu_start_idx = 1;
   }
 
+  PARAM_FUNC(param_trans)
+  {
+    pdes::kks::eta_start_idx = 2;
+    pdes::kks::c_start_idx = 1;
+    pdes::kks::mu_start_idx = 0;
+  }
+
   
   INI_FUNC(init_eta)
   {
@@ -272,6 +279,12 @@ namespace sheng
   PRE_FUNC_TPETRA(prec_c)
   {
     return pdes::kks::prec_c(basis, i, j, dt_, t_theta_, eqn_id, mobility);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  PRE_FUNC_TPETRA(prec_mu)
+  {
+    return pdes::kks::prec_mu(basis, i, j, dt_, t_theta_, eqn_id, mobility);
   }
 
 

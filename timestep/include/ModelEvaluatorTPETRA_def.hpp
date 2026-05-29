@@ -3150,7 +3150,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     paramfunc_[1] = &tpetra::kks::param_;
     paramfunc_[2] = &tpetra::sheng::param_;
 
-  }else if("shengtrans" == paramList.get<std::string> (TusastestNameString)){
+  }else if("shengtransold" == paramList.get<std::string> (TusastestNameString)){
 
     Teuchos::ParameterList *problemList;
     problemList = &paramList.sublist("ProblemParams", false);
@@ -3187,7 +3187,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     paramfunc_[2] = &tpetra::kks::param_;
     paramfunc_[3] = &tpetra::sheng::param_;
 
-  }else if("shengsplitkks" == paramList.get<std::string> (TusastestNameString)){
+  }else if("sheng" == paramList.get<std::string> (TusastestNameString)){
 
     Teuchos::ParameterList *problemList;
     problemList = &paramList.sublist("ProblemParams", false);
@@ -3202,7 +3202,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
 
     preconfunc_ = new std::vector<PREFUNC>(numeqs_);
     (*preconfunc_)[0] = &cases::sheng::prec_c;
-    (*preconfunc_)[1] = &cases::sheng::prec_c;
+    (*preconfunc_)[1] = &cases::sheng::prec_mu;
     (*preconfunc_)[2] = &cases::sheng::prec_eta;
 
     initfunc_ = new std::vector<INITFUNC>(numeqs_);
@@ -3220,6 +3220,41 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
 
     paramfunc_.resize(2);
     paramfunc_[0] = &cases::sheng::param_split;
+    paramfunc_[1] = &cases::sheng::param;
+
+  }else if("shengtrans" == paramList.get<std::string> (TusastestNameString)){
+
+    Teuchos::ParameterList *problemList;
+    problemList = &paramList.sublist("ProblemParams", false);
+
+    const int numeta = 1;
+    numeqs_ = numeta + 2;
+
+    residualfunc_ = new std::vector<RESFUNC>(numeqs_);
+    (*residualfunc_)[0] = cases::sheng::residual_mu_dp;
+    (*residualfunc_)[1] = cases::sheng::residual_c_split_dp;
+    (*residualfunc_)[2] = cases::sheng::residual_eta_dp;
+
+    preconfunc_ = new std::vector<PREFUNC>(numeqs_);
+    (*preconfunc_)[0] = &cases::sheng::prec_mu;
+    (*preconfunc_)[1] = &cases::sheng::prec_c;
+    (*preconfunc_)[2] = &cases::sheng::prec_eta;
+
+    initfunc_ = new std::vector<INITFUNC>(numeqs_);
+    (*initfunc_)[0] = &cases::sheng::init_mu;
+    (*initfunc_)[1] = &cases::sheng::init_c;
+    (*initfunc_)[2] = &cases::sheng::init_eta;
+
+    varnames_ = new std::vector<std::string>(numeqs_);
+    (*varnames_)[0] = "mu";
+    (*varnames_)[1] = "c";
+    (*varnames_)[2] = "eta";
+
+    dirichletfunc_ = NULL;
+    neumannfunc_ = NULL;
+
+    paramfunc_.resize(2);
+    paramfunc_[0] = &cases::sheng::param_trans;
     paramfunc_[1] = &cases::sheng::param;
 
   }else if("cahnhilliard" == paramList.get<std::string> (TusastestNameString)){

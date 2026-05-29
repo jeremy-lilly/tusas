@@ -574,7 +574,7 @@ namespace kks
     tools::utils::get_uu(eta, Neta, Neta_max, eta_start_idx, basis);
 
     double hh;
-    double hdivgrad_mu[Nt_max];
+    double Mdivgrad_mu[Nt_max];
 
     int idx = 0;
     for (int tdx = 0; tdx < Nt; ++tdx) {
@@ -582,12 +582,12 @@ namespace kks
       hh = parabolicenergy::h(&eta[tdx * Neta_max]);
 
       idx = tools::utils::idx(tdx, local_id, Nmu_max);
-      hdivgrad_mu[tdx] = mobility(hh) * grad_mu[idx] * grad_phi;
+      Mdivgrad_mu[tdx] = mobility(hh) * grad_mu[idx] * grad_phi;
     }  // tdx = 0, < Nt loop
 
     const double dc_dt = (basis[eqn_id]->uu() - basis[eqn_id]->uuold()) / dt_ * phi;
 
-    return tools::utils::ret_value(dc_dt, hdivgrad_mu, dt_, dtold_, t_theta_, t_theta2_);
+    return tools::utils::ret_value(dc_dt, Mdivgrad_mu, dt_, dtold_, t_theta_, t_theta2_);
   }
   
   /*
@@ -665,7 +665,7 @@ namespace kks
   }
 
   /*
-   * preconditioner for c equations (non-split) using the kks model
+   * preconditioner for c equations (non-split?) using the kks model
    */
   KOKKOS_INLINE_FUNCTION 
   PRE_FUNC_TPETRA(prec_c, const double mobility(const double hh))
@@ -697,6 +697,36 @@ namespace kks
     const double ut = phi_i * phi_j / dt_;
 
     return ut + t_theta_ * Mdivgrad_c;
+  }
+  
+  /*
+   * preconditioner for mu equations using the kks model
+   */
+  KOKKOS_INLINE_FUNCTION 
+  PRE_FUNC_TPETRA(prec_mu, const double mobility(const double hh))
+  {
+    const double phi_i = basis[0]->phi(i);
+    const double phi_j = basis[0]->phi(j);
+
+    const double dphi_dx_i = basis[0]->dphidx(i);
+    const double dphi_dy_i = basis[0]->dphidy(i);
+    const double dphi_dz_i = basis[0]->dphidz(i);
+    const double dphi_dx_j = basis[0]->dphidx(j);
+    const double dphi_dy_j = basis[0]->dphidy(j);
+    const double dphi_dz_j = basis[0]->dphidz(j);
+    
+    double eta[Neta_max];
+    for(int k = 0; k < Neta; ++k){
+      eta[k] = basis[k + eta_start_idx]->uu();
+    }
+
+    const double hh = parabolicenergy::h(eta);
+    const double Mdivgrad = mobility(hh) * (dphi_dx_i * dphi_dx_j 
+                                            + dphi_dy_i * dphi_dy_j 
+                                            + dphi_dz_i * dphi_dz_j);
+    const double ut = phi_i * phi_j / dt_;
+
+    return ut + t_theta_ * Mdivgrad;
   }
 
 
