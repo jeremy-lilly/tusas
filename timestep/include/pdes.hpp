@@ -342,6 +342,10 @@ namespace kks
   TUSAS_DEVICE double L = 2.;
   TUSAS_DEVICE double w = 12.;
 
+  // change of variables meta vars
+  TUSAS_DEVICE double cmin = 1e-10;
+  TUSAS_DEVICE double cmax = 1 - cmin;
+
   PARAM_FUNC(param)
   {
     int Neta_ = plist->get<int>("N_ETA", Neta);
@@ -402,7 +406,7 @@ namespace kks
    */
   KOKKOS_INLINE_FUNCTION
   const double c(const double ctilde) {
-    return std::exp(ctilde) / (1. + std::exp(ctilde));
+    return (cmax * std::exp(ctilde) + cmin) / (1. + std::exp(ctilde));
   }
 
   /*
@@ -410,7 +414,7 @@ namespace kks
    */
   KOKKOS_INLINE_FUNCTION
   const Grad grad_c(const Grad grad_ctilde, const double ctilde) {
-    return grad_ctilde * (c(ctilde) - std::pow(c(ctilde), 2));
+    return grad_ctilde * (std::exp(ctilde) / (1 + std::exp(ctilde))) * (cmax - c(ctilde));
   }
 
   /*
