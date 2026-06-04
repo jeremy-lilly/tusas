@@ -130,8 +130,8 @@ namespace parabolicenergy
    *   b corresponds to 1 - eta
    *
    * The free energy density functions are
-   *   fa(ca) = Aa_ * (ca - (c1_ + delta_c1_))^2 + f1_
-   *   fb(cb) = Ab_ * (cb - (c2_ + delta_c2_))^2 + f2_
+   *   fa(ca) = Aa * (ca - (c1 + delta_c1))^2 + f1
+   *   fb(cb) = Ab * (cb - (c2 + delta_c2))^2 + f2
    *
    * We also supply overloaded versions of relevant functions
    * where we assume that ca = cb = c for non-kks solves
@@ -345,12 +345,12 @@ namespace kks
   PARAM_FUNC(param)
   {
     int Neta_ = plist->get<int>("N_ETA", Neta);
-    int Nmu_ = plist->get<int>("N_ETA", Neta);
+    int Nmu_ = plist->get<int>("N_MU", Nmu);
     int Nc_ = plist->get<int>("N_C", Nc);
 #ifdef TUSAS_HAVE_CUDA
     cudaMemcpyToSymbol(Neta, &Neta_, sizeof(int));
     cudaMemcpyToSymbol(Nmu, &Nmu_, sizeof(int));
-    cudaMemcpyToSymbol(Nc, &c_, sizeof(int));
+    cudaMemcpyToSymbol(Nc, &Nc_, sizeof(int));
 #else
     Neta = Neta_;
     Nmu = Nmu_;
@@ -397,6 +397,23 @@ namespace kks
   }
 
   /*
+   * change of variable function for c, so that
+   * it remains bounded between 0 and 1
+   */
+  KOKKOS_INLINE_FUNCTION
+  const double c(const double ctilde) {
+    return std::exp(ctilde) / (1. + std::exp(ctilde));
+  }
+
+  /*
+   * change of variable function for grad_c
+   */
+  KOKKOS_INLINE_FUNCTION
+  const Grad grad_c(const Grad grad_ctilde, const double ctilde) {
+    return grad_ctilde * (c(ctilde) - std::pow(c(ctilde), 2));
+  }
+
+  /*
    * residual for eta equations using the kks model
    */
   KOKKOS_INLINE_FUNCTION 
@@ -437,6 +454,69 @@ namespace kks
       cb[tdx] = parabolicenergy::c2;
       idx = tools::utils::idx(tdx, local_id, Nc_max);
       tools::solvers::solve_kks(c[idx], hh[tdx], ca[tdx], cb[tdx],
+                                parabolicenergy::dfa_dca,
+                                parabolicenergy::dfb_dcb,
+                                parabolicenergy::d2fa_dca2,
+                                parabolicenergy::d2fb_dcb2);
+
+      idx = tools::utils::idx(tdx, local_id, Neta_max);
+      df_deta[tdx] = (parabolicenergy::df_deta(ca[tdx], cb[tdx], eta[idx])
+                        + w * parabolicenergy::dg_deta(&eta[tdx * Neta_max], local_id)) * phi;
+      k_divgrad_eta[tdx] = k_eta * grad_eta[idx] * grad_phi;
+
+      f[tdx] = L * (k_divgrad_eta[tdx] + df_deta[tdx]);
+    }
+
+    const double deta_dt = (eta[tools::utils::idx(0, local_id, Neta_max)] 
+                              - eta[tools::utils::idx(1, local_id, Neta_max)]) / dt_ * phi;
+
+    return tools::utils::ret_value(deta_dt, f, dt_, dtold_, t_theta_, t_theta2_);
+  }
+
+  /*
+   * residual for eta equations using the kks model
+   * this is meant to be paired with the ctilde
+   * residual below, we are not actually applying a change
+   * of variables to eta itself
+   */
+  KOKKOS_INLINE_FUNCTION 
+  RES_FUNC_TPETRA(pde_etatilde, const double mobility(const double hh))
+  {
+    const int Nt = 3;
+
+    const int local_id = eqn_id - eta_start_idx;
+
+    const double phi = basis[0]->phi(i);
+    Grad grad_phi;
+    grad_phi.dx = basis[0]->dphidx(i);
+    grad_phi.dy = basis[0]->dphidy(i);
+    grad_phi.dz = basis[0]->dphidz(i);
+
+    double ctilde[Nt_max * Nc_max];
+    Grad grad_ctilde[Nt_max * Nc_max];
+    tools::utils::get_uu(ctilde, Nc, Nc_max, c_start_idx, basis);
+    tools::utils::get_graduu(grad_ctilde, Nc, Nc_max, c_start_idx, basis);
+
+    double eta[Nt_max * Neta_max];
+    Grad grad_eta[Nt_max * Neta_max];
+    tools::utils::get_uu(eta, Neta, Neta_max, eta_start_idx, basis);
+    tools::utils::get_graduu(grad_eta, Neta, Neta_max, eta_start_idx, basis);
+
+    double hh[Nt_max];
+    double ca[Nt_max];
+    double cb[Nt_max];
+    double k_divgrad_eta[Nt_max];
+    double df_deta[Nt_max];
+    double f[Nt_max];
+
+    int idx = 0;
+    for (int tdx = 0; tdx < Nt; ++tdx) {
+      hh[tdx] = parabolicenergy::h(&eta[tdx * Neta_max]);
+      
+      ca[tdx] = parabolicenergy::c1;
+      cb[tdx] = parabolicenergy::c2;
+      idx = tools::utils::idx(tdx, local_id, Nc_max);
+      tools::solvers::solve_kks(c(ctilde[idx]), hh[tdx], ca[tdx], cb[tdx],
                                 parabolicenergy::dfa_dca,
                                 parabolicenergy::dfb_dcb,
                                 parabolicenergy::d2fa_dca2,
@@ -589,6 +669,51 @@ namespace kks
 
     return tools::utils::ret_value(dc_dt, Mdivgrad_mu, dt_, dtold_, t_theta_, t_theta2_);
   }
+
+  /*
+   * residual for ctilde equations (split) using the kks model
+   * here, we use a change of variables 
+   *    c = e^{ctilde} / ( 1 + e^{ctilde} )
+   * so that c is bounded between 0 and 1
+   */
+  KOKKOS_INLINE_FUNCTION
+  RES_FUNC_TPETRA(pde_ctilde_split, const double mobility(const double hh))
+  {
+    // number of time levels to compute
+    // might want to pass this in to res func?
+    const int Nt = 3;
+
+    const int local_id = eqn_id - c_start_idx;
+
+    const double phi = basis[0]->phi(i);
+    Grad grad_phi;
+    grad_phi.dx = basis[0]->dphidx(i);
+    grad_phi.dy = basis[0]->dphidy(i);
+    grad_phi.dz = basis[0]->dphidz(i);
+
+    Grad grad_mu[Nt_max * Nmu_max];
+    tools::utils::get_graduu(grad_mu, Nmu, Nmu_max, mu_start_idx, basis);
+
+    double eta[Nt_max * Neta_max];
+    tools::utils::get_uu(eta, Neta, Neta_max, eta_start_idx, basis);
+
+    double hh;
+    double Mdivgrad_mu[Nt_max];
+
+    int idx = 0;
+    for (int tdx = 0; tdx < Nt; ++tdx) {
+      // calculate h
+      hh = parabolicenergy::h(&eta[tdx * Neta_max]);
+
+      idx = tools::utils::idx(tdx, local_id, Nmu_max);
+      Mdivgrad_mu[tdx] = mobility(hh) * grad_mu[idx] * grad_phi;
+    }  // tdx = 0, < Nt loop
+
+    const double dctilde_dt = (basis[eqn_id]->uu() - basis[eqn_id]->uuold()) / dt_ * phi;
+
+    return tools::utils::ret_value(dctilde_dt, Mdivgrad_mu, dt_, dtold_, t_theta_, t_theta2_);
+  }
+
   
   /*
    * residual for mu equations using the kks model
@@ -639,6 +764,57 @@ namespace kks
     return -basis[eqn_id]->uu() * phi + df_dc[0] + kdivgrad_c[0];
   }
 
+  /*
+   * residual for mutilde equations using the kks model
+   * this is meant to be paired with the ctilde
+   * residual above, we are not actually applying a change
+   * of variables to mu itself
+   */
+  KOKKOS_INLINE_FUNCTION
+  RES_FUNC_TPETRA(pde_mutilde)
+  {
+    const int Nt = 1;
+
+    // note that c and mu share a local_id
+    const int local_id = eqn_id - mu_start_idx;
+
+    const double phi = basis[0]->phi(i);
+    Grad grad_phi;
+    grad_phi.dx = basis[0]->dphidx(i);
+    grad_phi.dy = basis[0]->dphidy(i);
+    grad_phi.dz = basis[0]->dphidz(i);
+
+    double ctilde[Nt_max * Nc_max];
+    Grad grad_ctilde[Nt_max * Nc_max];
+    tools::utils::get_uu(ctilde, Nc, Nc_max, c_start_idx, basis);
+    tools::utils::get_graduu(grad_ctilde, Nc, Nc_max, c_start_idx, basis);
+
+    double eta[Nt_max * Neta_max];
+    tools::utils::get_uu(eta, Neta, Neta_max, eta_start_idx, basis);
+
+    double hh, ca, cb;
+    double kdivgrad_c[Nt_max];
+    double df_dc[Nt_max];
+
+    int idx = 0;
+    for (int tdx = 0; tdx < Nt; ++tdx) {
+      idx = tools::utils::idx(tdx, local_id, Nc_max);
+      kdivgrad_c[tdx] = k_c * grad_c(grad_ctilde[idx], ctilde[idx]) * grad_phi;
+
+      hh = parabolicenergy::h(&eta[tdx * Neta_max]);
+      ca = parabolicenergy::c1;
+      cb = parabolicenergy::c2;
+      tools::solvers::solve_kks(c(ctilde[idx]), hh, ca, cb,
+                                parabolicenergy::dfa_dca,
+                                parabolicenergy::dfb_dcb,
+                                parabolicenergy::d2fa_dca2,
+                                parabolicenergy::d2fb_dcb2);
+
+      df_dc[tdx] = parabolicenergy::dfa_dca(ca) * phi;
+    }  // tdx = 0, < Nt loop
+    
+    return -basis[eqn_id]->uu() * phi + df_dc[0] + kdivgrad_c[0];
+  }
 
   /*
    * preconditioner for eta equations using the kks model
@@ -727,6 +903,15 @@ namespace kks
     const double ut = phi_i * phi_j / dt_;
 
     return ut + t_theta_ * Mdivgrad;
+  }
+
+  /* postprocess function to get c back from ctilde
+   * change of variables
+   *   c(ctilde) = e^{ctilde} / (1 + e^{ctilde})
+   */
+  PPR_FUNC(postproc_c)
+  {
+    return c(u[c_start_idx]);
   }
 
 

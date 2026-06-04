@@ -249,6 +249,15 @@ namespace sheng
   TUSAS_DEVICE RES_FUNC_TPETRA((*residual_eta_dp)) = residual_eta;
 
   KOKKOS_INLINE_FUNCTION
+  RES_FUNC_TPETRA(residual_etatilde)
+  {
+    return pdes::kks::pde_etatilde(basis, i, dt_, dtold_,
+                                   t_theta_, t_theta2_, time, eqn_id,
+                                   vol, rand, mobility);
+  }
+  TUSAS_DEVICE RES_FUNC_TPETRA((*residual_etatilde_dp)) = residual_etatilde;
+
+  KOKKOS_INLINE_FUNCTION
   RES_FUNC_TPETRA(residual_c_split)
   {
     const double y = -(basis[0]->yy());
@@ -261,6 +270,18 @@ namespace sheng
   TUSAS_DEVICE RES_FUNC_TPETRA((*residual_c_split_dp)) = residual_c_split;
 
   KOKKOS_INLINE_FUNCTION
+  RES_FUNC_TPETRA(residual_ctilde_split)
+  {
+    const double y = -(basis[0]->yy());
+    const double s = S_forcing(y) * basis[0]->phi(i);
+    
+    return pdes::kks::pde_ctilde_split(basis, i, dt_, dtold_,
+                                       t_theta_, t_theta2_, time, eqn_id,
+                                       vol, rand, mobility) - s;
+  }
+  TUSAS_DEVICE RES_FUNC_TPETRA((*residual_ctilde_split_dp)) = residual_ctilde_split;
+
+  KOKKOS_INLINE_FUNCTION
   RES_FUNC_TPETRA(residual_mu)
   {
     return pdes::kks::pde_mu(basis, i, dt_, dtold_,
@@ -268,6 +289,15 @@ namespace sheng
                              vol, rand);
   }
   TUSAS_DEVICE RES_FUNC_TPETRA((*residual_mu_dp)) = residual_mu;
+
+  KOKKOS_INLINE_FUNCTION
+  RES_FUNC_TPETRA(residual_mutilde)
+  {
+    return pdes::kks::pde_mutilde(basis, i, dt_, dtold_,
+                                  t_theta_, t_theta2_, time, eqn_id,
+                                  vol, rand);
+  }
+  TUSAS_DEVICE RES_FUNC_TPETRA((*residual_mutilde_dp)) = residual_mutilde;
 
   KOKKOS_INLINE_FUNCTION
   PRE_FUNC_TPETRA(prec_eta)
