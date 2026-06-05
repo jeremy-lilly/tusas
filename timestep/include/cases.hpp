@@ -203,6 +203,12 @@ namespace sheng
     return pdes::parabolicenergy::c1 * hh + initial_c_alpha * (1. - hh);
   }
 
+  INI_FUNC(init_ctilde)
+  {
+    const double c = init_c(x, y, z, eqn_id, lid);
+    return pdes::kks::ctilde(c);
+  }
+
   INI_FUNC(init_mu)
   {
     const int Neta_max = pdes::kks::Neta_max;

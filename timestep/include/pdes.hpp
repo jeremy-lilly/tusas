@@ -343,8 +343,8 @@ namespace kks
   TUSAS_DEVICE double w = 12.;
 
   // change of variables meta vars
-  TUSAS_DEVICE double cmin = 1e-10;
-  TUSAS_DEVICE double cmax = 1 - cmin;
+  TUSAS_DEVICE double cmin = 0;
+  TUSAS_DEVICE double cmax = 1;
 
   PARAM_FUNC(param)
   {
@@ -407,6 +407,15 @@ namespace kks
   KOKKOS_INLINE_FUNCTION
   const double c(const double ctilde) {
     return (cmax * std::exp(ctilde) + cmin) / (1. + std::exp(ctilde));
+  }
+  
+  /*
+   * change of variable function for c, so that
+   * it remains bounded between 0 and 1
+   */
+  KOKKOS_INLINE_FUNCTION
+  const double ctilde(const double c) {
+    return std::log((c - cmin) / (cmax - c));
   }
 
   /*

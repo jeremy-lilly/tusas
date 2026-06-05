@@ -3206,7 +3206,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     (*preconfunc_)[2] = &cases::sheng::prec_eta;
 
     initfunc_ = new std::vector<INITFUNC>(numeqs_);
-    (*initfunc_)[0] = &cases::sheng::init_c;
+    (*initfunc_)[0] = &cases::sheng::init_ctilde;
     (*initfunc_)[1] = &cases::sheng::init_mu;
     (*initfunc_)[2] = &cases::sheng::init_eta;
 
