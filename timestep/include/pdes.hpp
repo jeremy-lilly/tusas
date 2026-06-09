@@ -343,8 +343,9 @@ namespace kks
   TUSAS_DEVICE double w = 12.;
 
   // change of variables meta vars
-  TUSAS_DEVICE double cmin = 0;
-  TUSAS_DEVICE double cmax = 1;
+  TUSAS_DEVICE double cmin = 0.;
+  TUSAS_DEVICE double cmax = 1.;
+  TUSAS_DEVICE double ctilde_bnd = 50.;
 
   PARAM_FUNC(param)
   {
@@ -406,7 +407,8 @@ namespace kks
    */
   KOKKOS_INLINE_FUNCTION
   const double c(const double ctilde) {
-    return (cmax * std::exp(ctilde) + cmin) / (1. + std::exp(ctilde));
+    const double c = (cmax * std::exp(ctilde) + cmin) / (1. + std::exp(ctilde));
+    return std::abs(ctilde) > ctilde_bnd ? tools::utils::heaviside(ctilde) : c;
   }
   
   /*
@@ -423,7 +425,9 @@ namespace kks
    */
   KOKKOS_INLINE_FUNCTION
   const Grad grad_c(const Grad grad_ctilde, const double ctilde) {
-    return grad_ctilde * (std::exp(ctilde) / (1 + std::exp(ctilde))) * (cmax - c(ctilde));
+    const double a = std::exp(ctilde) / (1 + std::exp(ctilde));
+    const double b = std::abs(ctilde) > ctilde_bnd ? tools::utils::heaviside(ctilde) : a; 
+    return grad_ctilde * b * (cmax - c(ctilde));
   }
 
   /*
@@ -817,6 +821,7 @@ namespace kks
       hh = parabolicenergy::h(&eta[tdx * Neta_max]);
       ca = parabolicenergy::c1;
       cb = parabolicenergy::c2;
+      std::cout << "HERE ctilde = " << ctilde[idx] << std::endl;
       tools::solvers::solve_kks(c(ctilde[idx]), hh, ca, cb,
                                 parabolicenergy::dfa_dca,
                                 parabolicenergy::dfb_dcb,

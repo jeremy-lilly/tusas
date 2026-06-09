@@ -183,7 +183,9 @@ namespace solvers
     // max iters exceeded
     std::cout << "#### solve_kks() failed to converge!" << std::endl
               << "#### current error = " << std::sqrt(err2) << std::endl
-              << "#### tol = " << tol << std::endl;
+              << "#### tol = " << tol << std::endl
+              << "#### initial c1 = " << c1 << std::endl
+              << "#### initial hh = " << hh << std::endl;
 
     if (solve_kks_acceptfailed) {
       return 0;
@@ -283,6 +285,11 @@ namespace utils
                          const double* f,  // in: residual
                          const double t_theta) {  //: in implicit/explicit weight
     return ut + t_theta * f[0] + (1. - t_theta) * f[1];
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  const double heaviside(const double x) {
+    return (std::abs(x) + x) / (2. * x);
   }
 
 
