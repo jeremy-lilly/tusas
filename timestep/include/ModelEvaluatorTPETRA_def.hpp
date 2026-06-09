@@ -3211,7 +3211,7 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     (*initfunc_)[2] = &cases::sheng::init_eta;
 
     varnames_ = new std::vector<std::string>(numeqs_);
-    (*varnames_)[0] = "c";
+    (*varnames_)[0] = "ctilde";
     (*varnames_)[1] = "mu";
     (*varnames_)[2] = "eta";
 
@@ -3235,9 +3235,9 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     numeqs_ = numeta + 2;
 
     residualfunc_ = new std::vector<RESFUNC>(numeqs_);
-    (*residualfunc_)[0] = cases::sheng::residual_mu_dp;
-    (*residualfunc_)[1] = cases::sheng::residual_c_split_dp;
-    (*residualfunc_)[2] = cases::sheng::residual_eta_dp;
+    (*residualfunc_)[0] = cases::sheng::residual_mutilde_dp;
+    (*residualfunc_)[1] = cases::sheng::residual_ctilde_split_dp;
+    (*residualfunc_)[2] = cases::sheng::residual_etatilde_dp;
 
     preconfunc_ = new std::vector<PREFUNC>(numeqs_);
     (*preconfunc_)[0] = &cases::sheng::prec_mu;
@@ -3246,12 +3246,12 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
 
     initfunc_ = new std::vector<INITFUNC>(numeqs_);
     (*initfunc_)[0] = &cases::sheng::init_mu;
-    (*initfunc_)[1] = &cases::sheng::init_c;
+    (*initfunc_)[1] = &cases::sheng::init_ctilde;
     (*initfunc_)[2] = &cases::sheng::init_eta;
 
     varnames_ = new std::vector<std::string>(numeqs_);
     (*varnames_)[0] = "mu";
-    (*varnames_)[1] = "c";
+    (*varnames_)[1] = "ctilde";
     (*varnames_)[2] = "eta";
 
     dirichletfunc_ = NULL;
@@ -3260,6 +3260,9 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
     paramfunc_.resize(2);
     paramfunc_[0] = &cases::sheng::param_trans;
     paramfunc_[1] = &cases::sheng::param;
+
+    post_proc.push_back(new post_process(mesh_, (int)0));
+    post_proc[0].postprocfunc_ = &pdes::kks::postproc_c;
 
   }else if("cahnhilliard" == paramList.get<std::string> (TusastestNameString)){
     //std::cout<<"cahnhilliard"<<std::endl;
