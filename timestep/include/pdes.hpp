@@ -722,9 +722,9 @@ namespace kks
       Mdivgrad_mu[tdx] = mobility(hh) * grad_mu[idx] * grad_phi;
     }  // tdx = 0, < Nt loop
 
-    const double dctilde_dt = (basis[eqn_id]->uu() - basis[eqn_id]->uuold()) / dt_ * phi;
+    const double dc_dt = (c(basis[eqn_id]->uu()) - c(basis[eqn_id]->uuold())) / dt_ * phi;
 
-    return tools::utils::ret_value(dctilde_dt, Mdivgrad_mu, dt_, dtold_, t_theta_, t_theta2_);
+    return tools::utils::ret_value(dc_dt, Mdivgrad_mu, dt_, dtold_, t_theta_, t_theta2_);
   }
 
   
