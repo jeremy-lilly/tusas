@@ -235,9 +235,9 @@ namespace sheng
 
   KOKKOS_INLINE_FUNCTION
   const double mobility(const double hh) {
-    // M = D * d2f_dc2
-    return D * pdes::parabolicenergy::d2fa_dca2() * pdes::parabolicenergy::d2fb_dcb2() 
-             / ((1 - hh) * pdes::parabolicenergy::d2fa_dca2() + hh * pdes::parabolicenergy::d2fb_dcb2());
+    // M = D / d2f_dc2
+    return D / (pdes::parabolicenergy::d2fa_dca2() * pdes::parabolicenergy::d2fb_dcb2() 
+             / ((1 - hh) * pdes::parabolicenergy::d2fa_dca2() + hh * pdes::parabolicenergy::d2fb_dcb2()));
   }
   
   KOKKOS_INLINE_FUNCTION 
