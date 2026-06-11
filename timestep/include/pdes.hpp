@@ -94,15 +94,16 @@
  *   const double *xyz: an array of coordinates indexed by equation, coordinates
  *   const double &time: the current simulation time
  */
-#define PPR_FUNC(NAME) double NAME(const double *u, \
-                                   const double *uold, \
-                                   const double *uoldold, \
-                                   const double *gradu, \
-                                   const double *xyz, \
-                                   const double &time, \
-                                   const double &dt, \
-                                   const double &dtold, \
-                                   const int &eqn_id)
+#define PPR_FUNC(NAME, ...) double NAME(const double *u, \
+                                        const double *uold, \
+                                        const double *uoldold, \
+                                        const double *gradu, \
+                                        const double *xyz, \
+                                        const double &time, \
+                                        const double &dt, \
+                                        const double &dtold, \
+                                        const int &eqn_id \
+                                        __VA_OPT__(,) __VA_ARGS__)
 
 /*
  * Parameter function to propogate information from input file. Each parameter function is called at the beginning of each simulation.
@@ -929,6 +930,100 @@ namespace kks
   PPR_FUNC(postproc_c)
   {
     return c(u[c_start_idx]);
+  }
+
+  PPR_FUNC(postproc_mu_a)
+  {
+    double eta[Neta_max];
+    for (int k = 0; k < Neta; ++k) {
+      eta[k] = u[k + eta_start_idx];
+    }
+
+    const double hh = parabolicenergy::h(eta);
+    const double c = u[c_start_idx];
+
+    double ca = parabolicenergy::c1;
+    double cb = parabolicenergy::c2;
+    tools::solvers::solve_kks(c, hh, ca, cb,
+                              parabolicenergy::dfa_dca,
+                              parabolicenergy::dfb_dcb,
+                              parabolicenergy::d2fa_dca2,
+                              parabolicenergy::d2fb_dcb2);
+    // based off eq (28) in the original KKS paper
+    return parabolicenergy::dfa_dca(ca);
+  }
+
+  PPR_FUNC(postproc_mu_b)
+  {
+    double eta[Neta_max];
+    for (int k = 0; k < Neta; ++k) {
+      eta[k] = u[k + eta_start_idx];
+    }
+
+    const double hh = parabolicenergy::h(eta);
+    const double c = u[c_start_idx];
+
+    double ca = parabolicenergy::c1;
+    double cb = parabolicenergy::c2;
+    tools::solvers::solve_kks(c, hh, ca, cb,
+                              parabolicenergy::dfa_dca,
+                              parabolicenergy::dfb_dcb,
+                              parabolicenergy::d2fa_dca2,
+                              parabolicenergy::d2fb_dcb2);
+    // based off eq (28) in the original KKS paper
+    return parabolicenergy::dfb_dcb(cb);
+  }
+
+  PPR_FUNC(postproc_ca)
+  {
+    double eta[Neta_max];
+    for (int k = 0; k < Neta; ++k) {
+      eta[k] = u[k + eta_start_idx];
+    }
+
+    const double hh = parabolicenergy::h(eta);
+    const double c = u[c_start_idx];
+
+    double ca = parabolicenergy::c1;
+    double cb = parabolicenergy::c2;
+    tools::solvers::solve_kks(c, hh, ca, cb,
+                              parabolicenergy::dfa_dca,
+                              parabolicenergy::dfb_dcb,
+                              parabolicenergy::d2fa_dca2,
+                              parabolicenergy::d2fb_dcb2);
+    // based off eq (28) in the original KKS paper
+    return ca;
+  }
+
+  PPR_FUNC(postproc_cb)
+  {
+    double eta[Neta_max];
+    for (int k = 0; k < Neta; ++k) {
+      eta[k] = u[k + eta_start_idx];
+    }
+
+    const double hh = parabolicenergy::h(eta);
+    const double c = u[c_start_idx];
+
+    double ca = parabolicenergy::c1;
+    double cb = parabolicenergy::c2;
+    tools::solvers::solve_kks(c, hh, ca, cb,
+                              parabolicenergy::dfa_dca,
+                              parabolicenergy::dfb_dcb,
+                              parabolicenergy::d2fa_dca2,
+                              parabolicenergy::d2fb_dcb2);
+    // based off eq (28) in the original KKS paper
+    return cb;
+  }
+
+  PPR_FUNC(postproc_mobility, const double mobility(const double hh))
+  {
+    double eta[Neta_max];
+    for (int k = 0; k < Neta; ++k) {
+      eta[k] = u[k + eta_start_idx];
+    }
+    const double hh = parabolicenergy::h(eta);
+    return mobility(hh);
   }
 
 

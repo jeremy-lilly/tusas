@@ -323,6 +323,15 @@ namespace sheng
     return pdes::kks::prec_mu(basis, i, j, dt_, t_theta_, eqn_id, mobility);
   }
 
+  PPR_FUNC(postproc_mobility)
+  {
+    return pdes::kks::postproc_mobility(u, uold, uoldold, 
+                                        gradu, xyz, time, 
+                                        dt, dtold, eqn_id,
+                                        mobility);
+  }
+
+
 
 }  // namespace sheng
 
