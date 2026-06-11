@@ -821,7 +821,6 @@ namespace kks
       hh = parabolicenergy::h(&eta[tdx * Neta_max]);
       ca = parabolicenergy::c1;
       cb = parabolicenergy::c2;
-      std::cout << "HERE ctilde = " << ctilde[idx] << std::endl;
       tools::solvers::solve_kks(c(ctilde[idx]), hh, ca, cb,
                                 parabolicenergy::dfa_dca,
                                 parabolicenergy::dfb_dcb,
