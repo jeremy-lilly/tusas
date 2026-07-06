@@ -468,6 +468,8 @@ namespace kks
     // might want to pass this in to res func?
     const int Nt = 3;
 
+    const int local_id = eqn_id - c_start_idx;
+
     // test function
     const double phi = basis[0]->phi(i);
     Grad grad_phi;
@@ -521,7 +523,7 @@ namespace kks
       // for the current component c_{eqn_id}
       ca[tdx] = parabolicenergy::c1;
       cb[tdx] = parabolicenergy::c2;
-      tools::solvers::solve_kks(c[tools::utils::idx(tdx, eqn_id, Nc_max)],
+      tools::solvers::solve_kks(c[tools::utils::idx(tdx, local_id, Nc_max)],
                                 hh[tdx],
                                 ca[tdx],
                                 cb[tdx],
@@ -538,15 +540,15 @@ namespace kks
       // this also follows from eq 30 and the chain rule
       //   grad(f_c) = f_cc * h' * (cb - ca) * grad(eta) + f_cc * grad(c) 
       //             = f_cc * (cb - ca) * grad(h) + f_cc * grad(c) 
-      idx = tools::utils::idx(tdx, eqn_id, Nc_max);
+      idx = tools::utils::idx(tdx, local_id, Nc_max);
       grad_df_dc[tdx] = d2f_dc2[tdx] * (cb[tdx] - ca[tdx]) * grad_h[tdx] + d2f_dc2[tdx] * grad_c[idx]; 
 
       // finally, calculate M * div(grad(f_c))
       Mdivgrad_df_dc[tdx] = mobility(hh[tdx]) * grad_df_dc[tdx] * grad_phi;
     }  // tdx = 0, < Nt loop
 
-    const double dc_dt = (c[tools::utils::idx(0, eqn_id, Nc_max)] 
-                            - c[tools::utils::idx(1, eqn_id, Nc_max)]) / dt_ * phi;
+    const double dc_dt = (c[tools::utils::idx(0, local_id, Nc_max)] 
+                            - c[tools::utils::idx(1, local_id, Nc_max)]) / dt_ * phi;
 
     return tools::utils::ret_value(dc_dt, Mdivgrad_df_dc, dt_, dtold_, t_theta_, t_theta2_);
   }
