@@ -614,6 +614,8 @@ namespace kks
     tools::utils::get_uu(c, Nc, Nc_max, c_start_idx, basis);
     tools::utils::get_graduu(grad_c, Nc, Nc_max, c_start_idx, basis);
 
+    const double mu = basis[eqn_id]->uu() * phi;
+
     double eta[Nt_max * Neta_max];
     tools::utils::get_uu(eta, Neta, Neta_max, eta_start_idx, basis);
 
@@ -638,7 +640,7 @@ namespace kks
       df_dc[tdx] = parabolicenergy::dfa_dca(ca) * phi;
     }  // tdx = 0, < Nt loop
     
-    return -basis[eqn_id]->uu() * phi + df_dc[0] + kdivgrad_c[0];
+    return -mu + df_dc[0] + kdivgrad_c[0];
   }
 
   /*
