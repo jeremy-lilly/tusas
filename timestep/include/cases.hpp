@@ -177,6 +177,13 @@ namespace sheng
     pdes::kks::mu_start_idx = 1;
   }
 
+  PARAM_FUNC(param_trans)
+  {
+    pdes::kks::eta_start_idx = 2;
+    pdes::kks::c_start_idx = 1;
+    pdes::kks::mu_start_idx = 0;
+  }
+
   
   INI_FUNC(init_eta)
   {
@@ -222,9 +229,9 @@ namespace sheng
 
   KOKKOS_INLINE_FUNCTION
   const double mobility(const double hh) {
-    // M = D * d2f_dc2
-    return D * pdes::parabolicenergy::d2fa_dca2() * pdes::parabolicenergy::d2fb_dcb2() 
-             / ((1 - hh) * pdes::parabolicenergy::d2fa_dca2() + hh * pdes::parabolicenergy::d2fb_dcb2());
+    // M = D / d2f_dc2
+    return D / (pdes::parabolicenergy::d2fa_dca2() * pdes::parabolicenergy::d2fb_dcb2() 
+             / ((1 - hh) * pdes::parabolicenergy::d2fa_dca2() + hh * pdes::parabolicenergy::d2fb_dcb2()));
   }
   
   KOKKOS_INLINE_FUNCTION 
@@ -240,6 +247,18 @@ namespace sheng
                               vol, rand, mobility);
   }
   TUSAS_DEVICE RES_FUNC_TPETRA((*residual_eta_dp)) = residual_eta;
+
+  KOKKOS_INLINE_FUNCTION
+  RES_FUNC_TPETRA(residual_c)
+  {
+    const double y = -(basis[0]->yy());
+    const double s = S_forcing(y) * basis[0]->phi(i);
+    
+    return pdes::kks::pde_c(basis, i, dt_, dtold_,
+                            t_theta_, t_theta2_, time, eqn_id,
+                            vol, rand, mobility) - s;
+  }
+  TUSAS_DEVICE RES_FUNC_TPETRA((*residual_c_dp)) = residual_c;
 
   KOKKOS_INLINE_FUNCTION
   RES_FUNC_TPETRA(residual_c_split)
@@ -273,6 +292,21 @@ namespace sheng
   {
     return pdes::kks::prec_c(basis, i, j, dt_, t_theta_, eqn_id, mobility);
   }
+
+  KOKKOS_INLINE_FUNCTION
+  PRE_FUNC_TPETRA(prec_mu)
+  {
+    return pdes::kks::prec_mu(basis, i, j, dt_, t_theta_, eqn_id, mobility);
+  }
+
+  PPR_FUNC(postproc_mobility)
+  {
+    return pdes::kks::postproc_mobility(u, uold, uoldold, 
+                                        gradu, xyz, time, 
+                                        dt, dtold, eqn_id,
+                                        mobility);
+  }
+
 
 
 }  // namespace sheng
