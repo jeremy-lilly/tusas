@@ -166,7 +166,7 @@ public:
 private:
   bool checkBounds(const NOX::Abstract::Vector& x) {
 
-    //std::cout<<"BoundedBacktracking::checkBounds"<<std::endl;
+    //std::cout << "BoundedBacktracking::checkBounds" << std::endl;
 
     const Thyra::VectorBase<double> * xx = 
       &(dynamic_cast<const NOX::Thyra::Vector&>(x).getThyraVector());
@@ -184,8 +184,10 @@ private:
       int eqn = lid % numeqs_;
       
       // Check if this equation is bounded
+      double sum = 0;
       for (int k = 0; k < boundedEqnids_.size(); k++) {
         if (eqn == boundedEqnids_[k]) {
+          sum += vals[lid];
           // This equation is bounded - check it
           if (vals[lid] < lowerboundedVals_[k] || 
               vals[lid] > upperboundedVals_[k]) {
@@ -199,6 +201,18 @@ private:
 			   << ", " << upperboundedVals_[k] << "]\n";
             }
             
+            return false;
+          }
+          // the sum of all bounded values is greater than 1
+          // TODO: this needs to be generalized!
+          if (sum > 1.) {
+
+            if (utils->isPrintType(NOX::Utils::Details)) {
+              int node = lid / numeqs_;
+              utils->out() << "  Sum out of bounds at node " << node 
+			               << "]\n";
+            }
+
             return false;
           }
           break;  // Found the equation, stop searching
