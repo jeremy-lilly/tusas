@@ -41,6 +41,7 @@ private:
   double stepReduction_;
   int maxIters_;
   bool checkDescent_;  // Also check for function decrease?
+  bool checkSum_;
   Teuchos::RCP<NOX::Utils> utils;
   
 public:
@@ -73,6 +74,7 @@ public:
     stepReduction_ = params->get("Step Reduction Factor", 0.5);
     maxIters_ = params->get("Max Iterations", 20);
     checkDescent_ = params->get("Check Descent", true);
+    checkSum_ = params->get("Check Sum", false);
 
 
     if (utils->isPrintType(NOX::Utils::Details)) {
@@ -205,7 +207,7 @@ private:
           }
           // the sum of all bounded values is greater than 1
           // TODO: this needs to be generalized!
-          if (sum > 1.) {
+          if (checkSum_ && sum > 1.) {
 
             if (utils->isPrintType(NOX::Utils::Details)) {
               int node = lid / numeqs_;
