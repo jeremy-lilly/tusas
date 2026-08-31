@@ -2,13 +2,13 @@
 
   <!-- simulation parameters -->
 
-  <Parameter name="dt" type="double" value="0.1"/>
-  <Parameter name="nt" type="int" value = "800"/>
-  <Parameter name="meshfile" type="string" value="../../meshes/tonks1_quad_1x300.e"/>
-  <Parameter name="testcase" type="string" value="mansoln-constmu-dirichlet"/>
+  <Parameter name="dt" type="double" value="$DT"/>
+  <Parameter name="nt" type="int" value = "$NT"/>
+  <Parameter name="meshfile" type="string" value="../../meshes/tonks1_quad_$MESH.e"/>
+  <Parameter name="testcase" type="string" value="mms-constmu-$BC"/>
   <Parameter name="method" type="string" value="tpetra"/>
   <Parameter name="preconditioner" type="bool" value="false"/>
-  <Parameter name="theta" type="double" value=".5"/>
+  <Parameter name="theta" type="double" value="$THETA"/>
 
   <Parameter name="noxrelres" type="double" value="1.e-11"/>
   <Parameter name="noxmaxiter" type="int" value = "40"/>
