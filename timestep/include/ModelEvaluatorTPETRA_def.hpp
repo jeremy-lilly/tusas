@@ -2980,9 +2980,10 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
                                          false, eta_id, "rms", 16));
     post_proc[1].postprocfunc_ = &cases::mansoln::postproc_diff_vs_exact_eta;
 
-    paramfunc_.resize(2);
+    paramfunc_.resize(3);
     paramfunc_[0] = &cases::mansoln::param;
-    paramfunc_[1] = &cases::mansoln::param_freeenergy_parabolic;
+    paramfunc_[1] = &cases::mansoln::param_eta_constmu;
+    paramfunc_[2] = &cases::mansoln::param_freeenergy_parabolic;
 
   }else if("mms-eta-constmu-neumann" == paramList.get<std::string> (TusastestNameString)){
     const double eta_id = 0;
@@ -3015,9 +3016,10 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
                                          false, eta_id, "rms", 16));
     post_proc[1].postprocfunc_ = &cases::mansoln::postproc_diff_vs_exact_eta;
 
-    paramfunc_.resize(2);
+    paramfunc_.resize(3);
     paramfunc_[0] = &cases::mansoln::param;
-    paramfunc_[1] = &cases::mansoln::param_freeenergy_parabolic;
+    paramfunc_[1] = &cases::mansoln::param_eta_constmu;
+    paramfunc_[2] = &cases::mansoln::param_freeenergy_parabolic;
 
   }else if("mms-c-constmu-dirichlet" == paramList.get<std::string> (TusastestNameString)){
     const double c_id = 0;
@@ -3050,9 +3052,10 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
                                          false, c_id, "rms", 16));
     post_proc[1].postprocfunc_ = &cases::mansoln::postproc_diff_vs_exact_c_constmu;
 
-    paramfunc_.resize(2);
+    paramfunc_.resize(3);
     paramfunc_[0] = &cases::mansoln::param;
-    paramfunc_[1] = &cases::mansoln::param_freeenergy_parabolic;
+    paramfunc_[1] = &cases::mansoln::param_c_constmu;
+    paramfunc_[2] = &cases::mansoln::param_freeenergy_parabolic;
 
   }else if("mms-c-constmu-neumann" == paramList.get<std::string> (TusastestNameString)){
     const double c_id = 0;
@@ -3087,7 +3090,8 @@ void ModelEvaluatorTPETRA<scalar_type>::set_test_case()
 
     paramfunc_.resize(2);
     paramfunc_[0] = &cases::mansoln::param;
-    paramfunc_[1] = &cases::mansoln::param_freeenergy_parabolic;
+    paramfunc_[1] = &cases::mansoln::param_c_constmu;
+    paramfunc_[2] = &cases::mansoln::param_freeenergy_parabolic;
 
   }else if("tonks1wbm" == paramList.get<std::string> (TusastestNameString)){
 
